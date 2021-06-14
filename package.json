@@ -14,11 +14,10 @@
   "dependencies": {
     "@supercharge/promise-pool": "^1.7.0",
     "got": "^11.8.2",
-    "sharp": "^0.28.3",
+    "jimp": "^0.16.1",
     "yargs": "^17.0.1"
   },
   "devDependencies": {
-    "@types/sharp": "^0.28.3",
     "@types/yargs": "^17.0.0"
   }
 }

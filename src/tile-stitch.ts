@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 import got from 'got';
-import sharp from 'sharp';
+import Jimp from 'jimp';
 import PromisePool from '@supercharge/promise-pool';
 import yargs, { number } from 'yargs';
-sharp.concurrency(1);
-sharp.cache({ memory: 500, files: 100, items: 500 });
 
 yargs
   .usage('Usage: -o outfile minlat minlon maxlat maxlon zoom http://whatever/{z}/{x}/{y}.png')
@@ -58,13 +56,17 @@ async function stitch(filename: string, minlat: number, minlon: number, maxlat: 
   const py = Math.abs(maxy - miny) / height;
   console.log(`==Pixel Size: x:${px} y:${py}`);
 
-  const images: Array<any> = [];
   const tiles: Array<[number, number]> = [];
   for (let ty = ty1; ty <= ty2; ty++) {
     for (let tx = tx1; tx <= tx2; tx++) {
       tiles.push([tx, ty]);
     }
   }
+
+  const newWidth = (tx2 - tx1 + 1) * tilesize;
+  const newHeight = (ty2 - ty1 + 1) * tilesize;
+	const resultImage =  await Jimp.create(newWidth, newHeight, 0);
+	
   let progress = 0;
   const { results, errors } = await PromisePool.withConcurrency(25)
     .for(tiles)
@@ -83,40 +85,23 @@ async function stitch(filename: string, minlat: number, minlon: number, maxlat: 
       console.log(progress.toFixed(2) + '%');
       progress += 100 / tiles.length;
       if (data.statusCode === 200) {
-        images.push({
-          input: data.rawBody,
-          top: yoff,
-          left: xoff,
-        });
+				const tileImage = await Jimp.read(data.rawBody);
+				resultImage.composite(tileImage, xoff, yoff);
       }
     });
 
-  const newWidth = (tx2 - tx1 + 1) * tilesize;
-  const newHeight = (ty2 - ty1 + 1) * tilesize;
   try {
-    const tmpBuffer = await sharp({
-      create: {
-        width: newWidth,
-        height: newHeight,
-        channels: 4,
-        background: 'rgba(0, 0, 0, 0)',
-      },
-      limitInputPixels: false,
-      sequentialRead: true,
-      failOnError: false,
-    })
-      .composite(images)
-      .toBuffer();
-    const output = await sharp(tmpBuffer, {
-      raw: {
-        width: newWidth,
-        height: newHeight,
-        channels: 4,
-      },
-      limitInputPixels: false,
-    })
-      .extract({ left: 0, top: 0, width: width, height: height })
-      .toFile(filename);
+		const output = await resultImage.crop(0, 0, width, height).writeAsync(filename);
+    // const output = await sharp(tmpBuffer, {
+    //   raw: {
+    //     width: newWidth,
+    //     height: newHeight,
+    //     channels: 4,
+    //   },
+    //   limitInputPixels: false,
+    // })
+    //   .extract({ left: 0, top: 0, width: width, height: height })
+    //   .toFile(filename);
     console.log('Success: ' + output);
   } catch (error) {
     console.error('Failed writing file');
