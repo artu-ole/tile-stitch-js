@@ -1,0 +1,24 @@
+{
+  "name": "tile-stitch-js",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "tile-stitch": "./dist/tile-stitch.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supercharge/promise-pool": "^1.7.0",
+    "got": "^11.8.2",
+    "sharp": "^0.28.3",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "@types/sharp": "^0.28.3",
+    "@types/yargs": "^17.0.0"
+  }
+}
